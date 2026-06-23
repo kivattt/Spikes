@@ -11,10 +11,13 @@ import time
         # < 1 second
         ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.SCI_PI_CORRELATION),
         # ? seconds
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.AMP_CORRELATION)
+        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.AMP_CORRELATION),
+        # ? seconds
+        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.GCCPHAT)
     ])
 def test_get_offset(wavfile1, wavfile2, full_expected_offset, algorithm: td.Algorithm):
     wave1 = wavfile.read(wavfile1)
+
     sample_rate2, wave2 = wavfile.read(wavfile2)
     wave2_length = wave2.shape[0]
     err = check_window(wave1, wave2, 0, wave2_length, sample_rate2, full_expected_offset, algorithm)
@@ -27,14 +30,23 @@ def test_get_offset(wavfile1, wavfile2, full_expected_offset, algorithm: td.Algo
         # 24 seconds, error = 60%
         ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.AMP_CORRELATION),
         # 3 minutes, error = 63%
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.AMP_DIFF)
+        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.AMP_DIFF),
+        # 28 seconds, error = 60%
+        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.GCCPHAT)
     ])
 def test_get_offset_accuracy_and_speed(wavfile1, wavfile2, full_expected_offset, algorithm: td.Algorithm):
     errors = []
     count_total = 0
 
     wave1 = wavfile.read(wavfile1)
-    sample_rate2, wave2 = wavfile.read(wavfile2)
+    # sample_rate2, wave2 = wavfile.read(wavfile2)
+    # wave2_length = wave2.shape[0]
+
+    s_rate2, w2 = wavfile.read(wavfile2)
+    w_length = w2.shape[0]
+
+    sample_rate2 = s_rate2
+    wave2 = td.band_reject(sample_rate2, w2, 5, 5)
     wave2_length = wave2.shape[0]
 
     start_time = time.perf_counter()

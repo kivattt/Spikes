@@ -9,6 +9,36 @@ class Algorithm(Enum):
     SCI_PI_CORRELATION = 3
     AMP_CORRELATION = 4
     AMP_DIFF = 5
+    GCCPHAT = 6
+
+# Runs a band-reject filter on data and returns a new np.ndarray result
+def band_reject(sample_freq: int, data: np.ndarray, reject_freq, bandwidth_hz):
+    if sample_freq <= 0:
+        raise ValueError("sample_freq must be > 0")
+    if reject_freq <= 0:
+        raise ValueError("reject_freq must be > 0")
+    if bandwidth_hz <= 0:
+        raise ValueError("bandwidth_hz must be > 0")
+
+    nyquist = sample_freq / 2
+    if reject_freq >= nyquist:
+        raise ValueError("reject_freq must be below Nyquist frequency")
+
+    q_factor = reject_freq / bandwidth_hz
+    if q_factor <= 0:
+        raise ValueError("Derived Q factor must be > 0")
+
+    b, a = sps.iirnotch(reject_freq, q_factor, fs=sample_freq)
+
+    signal = np.asarray(data, dtype=np.float64)
+    if signal.size == 0:
+        return signal
+
+    min_len_for_filtfilt = 3 * max(len(a), len(b))
+    if signal.shape[0] <= min_len_for_filtfilt:
+        return sps.lfilter(b, a, signal, axis=0)
+
+    return sps.filtfilt(b, a, signal, axis=0)
 
 # Returns the generic time difference in seconds between two waveforms
 
@@ -27,6 +57,8 @@ def get_offset(wave1: tuple[int, np.ndarray], wave2: tuple[int, np.ndarray], alg
             return algorithm_amp_correlate(wave1[0], data1, wave2[0], data2)
         case Algorithm.AMP_DIFF:
             return algorithm_amp_diff(wave1[0], data1, wave2[0], data2)
+        case Algorithm.GCCPHAT:
+            return algorithm_gccphat(wave1[0], data1, wave2[0], data2)
         case _:
             return None
 
@@ -49,6 +81,7 @@ def algorithm_scipy_correlate(sample_freq1: int, data1: np.ndarray, sample_freq2
 
     return (max_index - data2.shape[0]) / sample_freq2
 
+# Creates shorter volume envelopes and correlates between them
 def algorithm_amp_correlate(sample_freq1: int, data1: np.ndarray, sample_freq2: int, data2: np.ndarray):
     batch_size = 200
     amplitudes1 = get_amplitude_abs_max(data1, batch_size)
@@ -70,6 +103,45 @@ def algorithm_amp_diff(sample_freq1: int, data1: np.ndarray, sample_freq2: int, 
     result = min_index * batch_size / sample_freq2
 
     return result
+
+# Finds the offset between data1 and data2 based on the gccphat algorithm
+def algorithm_gccphat(sample_freq1: int, data1: np.ndarray, sample_freq2: int, data2: np.ndarray):
+    if data1.size == 0 or data2.size == 0:
+        return 0
+
+    # Convert potential multi-channel input to mono and normalize dtype.
+    ref = np.asarray(data1, dtype=np.float64)
+    sig = np.asarray(data2, dtype=np.float64)
+    if ref.ndim > 1:
+        ref = ref.mean(axis=1)
+    if sig.ndim > 1:
+        sig = sig.mean(axis=1)
+
+    fs = sample_freq1
+    if sample_freq1 != sample_freq2:
+        target_len = int(round(sig.shape[0] * sample_freq1 / sample_freq2))
+        if target_len <= 0:
+            return 0
+        sig = sps.resample(sig, target_len)
+
+    ref_len = ref.shape[0]
+    sig_len = sig.shape[0]
+    fft_len = ref_len + sig_len - 1
+
+    ref_fft = np.fft.rfft(ref, n=fft_len)
+    sig_fft = np.fft.rfft(sig, n=fft_len)
+    cross_spectrum = ref_fft * np.conj(sig_fft)
+
+    magnitude = np.abs(cross_spectrum)
+    magnitude[magnitude < 1e-15] = 1e-15
+    correlation = np.fft.irfft(cross_spectrum / magnitude, n=fft_len)
+
+    # Reorder to match integer lag range [-(len(sig)-1), len(ref)-1].
+    correlation = np.concatenate((correlation[-(sig_len - 1):], correlation[:ref_len]))
+    lags = np.arange(-(sig_len - 1), ref_len)
+
+    lag = lags[np.argmax(np.abs(correlation))]
+    return lag / fs
 
 def get_diffs(arr1: np.ndarray, arr2: np.ndarray):
     diffs = []
