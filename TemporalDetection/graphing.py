@@ -2,6 +2,12 @@ import scipy.io.wavfile as wavfile
 import matplotlib.pyplot as plt
 import numpy as np
 import temporal_detection as td
+import os
+
+base = os.path.join("test_files", "audio")
+
+mobile_audio = os.path.join(base, "OneClapPianoMobile.wav")
+pc_audio = os.path.join(base, "OneClapStuebordPCMono")
 
 def main():
     test4()
@@ -31,7 +37,7 @@ def get_feature(data):
     return (x, y)
 
 def test4():
-    sample_rate1, data1 = wavfile.read('test_files\\audio\\OneClapPianoMobile.wav')
+    sample_rate1, data1 = wavfile.read(mobile_audio)
     amplitude = td.get_amplitude_abs_max(data1, 200)
 
     x1 = np.linspace(0, 1, len(data1))
@@ -42,7 +48,7 @@ def test4():
     plt.show()
 
 def test3():
-    sample_rate1, data1 = wavfile.read('test_files\\audio\\OneClapPianoMobile.wav')
+    sample_rate1, data1 = wavfile.read(mobile_audio)
 
     amplitude = td.get_amplitude_abs_max(data1, 200)
     amplitude2 = td.get_amplitude_max(data1, 200)
@@ -65,8 +71,8 @@ def test2():
     plt.show()
 
 def test1():
-    sample_rate1, data1 = wavfile.read('test_files\\audio\\OneClapPianoMobile.wav')
-    sample_rate2, data2 = wavfile.read('test_files\\audio\\OneClapStuebordPCMono.wav')
+    sample_rate1, data1 = wavfile.read(mobile_audio)
+    sample_rate2, data2 = wavfile.read(pc_audio)
 
     #1.953
     start = int(1.9529 * 48000)

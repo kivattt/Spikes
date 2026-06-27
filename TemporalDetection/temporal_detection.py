@@ -45,20 +45,24 @@ def band_reject(sample_freq: int, data: np.ndarray, reject_freq, bandwidth_hz):
 def get_offset(wave1: tuple[int, np.ndarray], wave2: tuple[int, np.ndarray], algorithm: Algorithm):
     data1 = wave1[1]
     data2 = wave2[1]
+    sample_rate1 = wave1[0]
+    sample_rate2 = wave2[0]
+
+    params = (sample_rate1, data1, sample_rate2, data2)
 
     match algorithm:
         case Algorithm.ARGMAX:
-            return algorithm_argmax(wave1[0], data1, wave2[0], data2)
+            return algorithm_argmax(*params)
         case Algorithm.CORRELATION:
-            return algorithm_numpy_correlate(wave1[0], data1, wave2[0], data2)
+            return algorithm_numpy_correlate(*params)
         case Algorithm.SCI_PI_CORRELATION:
-            return algorithm_scipy_correlate(wave1[0], data1, wave2[0], data2)
+            return algorithm_scipy_correlate(*params)
         case Algorithm.AMP_CORRELATION:
-            return algorithm_amp_correlate(wave1[0], data1, wave2[0], data2)
+            return algorithm_amp_correlate(*params)
         case Algorithm.AMP_DIFF:
-            return algorithm_amp_diff(wave1[0], data1, wave2[0], data2)
+            return algorithm_amp_diff(*params)
         case Algorithm.GCCPHAT:
-            return algorithm_gccphat(wave1[0], data1, wave2[0], data2)
+            return algorithm_gccphat(*params)
         case _:
             return None
 

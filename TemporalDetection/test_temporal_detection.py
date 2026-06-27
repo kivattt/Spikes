@@ -2,18 +2,24 @@ import pytest
 import scipy.io.wavfile as wavfile
 import temporal_detection as td
 import time
+import os
+
+base = os.path.join("test_files", "audio")
+
+mobile_audio = os.path.join(base, "OneClapPianoMobile.wav")
+pc_audio = os.path.join(base, "OneClapStuebordPCMono.wav")
 
 @pytest.mark.parametrize("wavfile1, wavfile2, full_expected_offset, algorithm", [
         # < 1 second
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.ARGMAX),
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.ARGMAX),
         # 7 minutes
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.CORRELATION),
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.CORRELATION),
         # < 1 second
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.SCI_PI_CORRELATION),
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.SCI_PI_CORRELATION),
         # ? seconds
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.AMP_CORRELATION),
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.AMP_CORRELATION),
         # ? seconds
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.GCCPHAT)
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.GCCPHAT)
     ])
 def test_get_offset(wavfile1, wavfile2, full_expected_offset, algorithm: td.Algorithm):
     wave1 = wavfile.read(wavfile1)
@@ -26,13 +32,13 @@ def test_get_offset(wavfile1, wavfile2, full_expected_offset, algorithm: td.Algo
 @pytest.mark.parametrize("wavfile1, wavfile2, full_expected_offset, algorithm", [
         #('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.CORRELATION),
         # 4 seconds, error = 47%
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.SCI_PI_CORRELATION),
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.SCI_PI_CORRELATION),
         # 24 seconds, error = 60%
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.AMP_CORRELATION),
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.AMP_CORRELATION),
         # 3 minutes, error = 63%
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.AMP_DIFF),
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.AMP_DIFF),
         # 28 seconds, error = 60%
-        ('test_files\\audio\\OneClapPianoMobile.wav', 'test_files\\audio\\OneClapStuebordPCMono.wav', 1.953, td.Algorithm.GCCPHAT)
+        (mobile_audio, pc_audio, 1.953, td.Algorithm.GCCPHAT)
     ])
 def test_get_offset_accuracy_and_speed(wavfile1, wavfile2, full_expected_offset, algorithm: td.Algorithm):
     errors = []
